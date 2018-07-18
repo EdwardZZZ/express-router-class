@@ -37,6 +37,7 @@ function Router(req, res, next) {
 
     clazz.req = req;
     clazz.res = res;
+    clazz.next = next;
     const method = clazz[methodName];
     if (!method) {
         return next();

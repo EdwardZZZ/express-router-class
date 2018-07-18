@@ -29,6 +29,11 @@ export default class Index{
     index() {
         // this.res
         // this.req
+        // this.next
+    }
+    // route 'index/rest/1/2/3'
+    rest(a, b, c) {
+        console.log(a, b, c); // 1, 2, 3
     }
     // route 'index/test/a/b/c/d'
     test(...props) {
