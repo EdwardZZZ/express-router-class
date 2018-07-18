@@ -4,10 +4,10 @@ import config from './config';
 
 const controllerMap = new Map();
 function initMap() {
-    console.log('init route');
-    const reg = /([a-zA-Z0-9]+)Controller.js/
+    console.log('--init route--');
+    const { controllerDir, controllerSuffix } = config.getConfig();
 
-    const { controllerDir } = config.getConfig();
+    const reg = new RegExp(`([a-zA-Z0-9_]+)${controllerSuffix}.js`)
     console.assert(fs.existsSync(controllerDir), `controller filepath may need to be set, default:${controllerDir}`);
     fs.readdirSync(controllerDir).forEach(function(name) {
         const result = name.match(reg);

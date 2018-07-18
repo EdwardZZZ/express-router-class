@@ -8,7 +8,8 @@ default route 'index/index'
 ```js
 const { setConfig } = require('express-router-class');
 setConfig({
-    controllerDir: '***'    // default 'src/controller'
+    controllerDir: '***'    // default 'src/controller',
+    controllerSuffix: ''    // default 'Controller',
 })
 ```
 
