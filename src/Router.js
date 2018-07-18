@@ -1,22 +1,27 @@
 import fs from 'fs';
 import path from 'path';
-import app from 'express';
 import config from './config';
 
 const controllerMap = new Map();
-const reg = /([a-zA-Z0-9]+)Controller.js/
+function initMap() {
+    console.log('init route');
+    const reg = /([a-zA-Z0-9]+)Controller.js/
 
-const { controllerDir } = config.getConfig();
-console.assert(fs.existsSync(controllerDir), `controller filepath may need to be set, default:${controllerDir}`);
-fs.readdirSync(controllerDir).forEach(function(name) {
-    const result = name.match(reg);
-    if (result) {
-        const clazz = require(path.resolve(controllerDir, name));
-        controllerMap.set(result[1].toLocaleLowerCase(), new clazz());
-    }
-})
+    const { controllerDir } = config.getConfig();
+    console.assert(fs.existsSync(controllerDir), `controller filepath may need to be set, default:${controllerDir}`);
+    fs.readdirSync(controllerDir).forEach(function(name) {
+        const result = name.match(reg);
+        if (result) {
+            console.log(name);
+            const clazz = require(path.resolve(controllerDir, name));
+            controllerMap.set(result[1].toLocaleLowerCase(), new clazz());
+        }
+    })
+}
 
 function Router(req, res, next) {
+    controllerMap.size || initMap();
+
     const url = req.path.slice(1) || 'index';
     if (/^\d+$/.test(url)) {
         return next();
@@ -30,7 +35,6 @@ function Router(req, res, next) {
         return next();
     }
 
-    clazz.ctx = app;
     clazz.req = req;
     clazz.res = res;
     const method = clazz[methodName];

@@ -22,15 +22,16 @@ app.use(Router);
 ```js
 // controller
 export default class Index{
+    __before() {}
+    __after() {}
     // route 'index/index'
     index() {
         // this.res
         // this.req
-        // this.ctx
     }
-    // route 'index/test'
-    test() {
-        
+    // route 'index/test/a/b/c/d'
+    test(...props) {
+        console.log(props); // ['a', 'b', 'c', 'd']
     }
 }
 ```
