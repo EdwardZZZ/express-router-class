@@ -35,6 +35,7 @@ function Router(req, res, next) {
         return next();
     }
 
+    clazz.ctx = req.app;
     clazz.req = req;
     clazz.res = res;
     clazz.next = next;
