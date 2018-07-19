@@ -30,22 +30,34 @@ function Router(req, res, next) {
     const pathArr = url.split('\/');
     const [className = 'index', methodName = 'index', ...params] = pathArr;
 
-    const clazz = controllerMap.get(className);
-    if (!clazz) {
+    const instance = controllerMap.get(className);
+    if (!instance) {
         return next();
     }
 
-    clazz.ctx = req.app;
-    clazz.req = req;
-    clazz.res = res;
-    clazz.next = next;
-    const method = clazz[methodName];
+    instance.ctx = req.app;
+    instance.req = req;
+    instance.res = res;
+    instance.next = next;
+    const method = instance[methodName];
     if (!method) {
         return next();
     }
-    clazz.__before && clazz.__before.apply(clazz);
-    method.apply(clazz, params);
-    clazz.__after && clazz.__after.apply(clazz);
+
+    const { __before, __after } = instance;
+    let promise = Promise.resolve();
+    if (__before) {
+        promise = Promise.resolve(__before.apply(instance));
+    }
+
+    promise.then(data => {
+        if (data === false) return false;
+        return method.apply(instance, params);
+    }).then(data => {
+        if (data === false) return false;
+        __after && __after.apply(instance);
+        return data;
+    })
 }
 
 export default Router;
