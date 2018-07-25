@@ -1,7 +1,7 @@
 # express-router-class
 
     simple router
-    suport decorator base on path-to-regexp
+    support decorator base on path-to-regexp
 
 ### setting
 
