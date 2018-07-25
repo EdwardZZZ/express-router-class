@@ -18,6 +18,6 @@ export default {
     'path',
     'express',
     'path',
-    'default',
+    'path-to-regexp'
   ],
 };

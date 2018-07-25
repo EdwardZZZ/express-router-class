@@ -1,6 +1,6 @@
 {
   "name": "express-router-class",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "express router class",
   "main": "index.js",
   "scripts": {
@@ -19,6 +19,10 @@
     "rollup-plugin-eslint": "^3.0.0",
     "rollup-plugin-node-resolve": "^2.0.0",
     "rollup-plugin-uglify": "^4.0.0",
+    "rollup-plugin-uglify-es": "0.0.1",
     "rollup-watch": "^3.0.0"
+  },
+  "dependencies": {
+    "path-to-regexp": "^2.2.1"
   }
 }
