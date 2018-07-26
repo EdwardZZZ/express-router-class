@@ -11,7 +11,7 @@ export default {
       exclude: 'node_modules/**',
       runtimeHelpers: true
     }),
-    // uglify(),
+    uglify(),
   ],
   external: [
     'fs',
