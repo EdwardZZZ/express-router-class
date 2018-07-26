@@ -1,6 +1,7 @@
 # express-router-class
 
     simple router
+    support config routes
     support decorator base on path-to-regexp
 
 ### setting
@@ -12,14 +13,22 @@
 const { setConfig } = require('express-router-class');
 setConfig({
     controllerDir: '***'    // default 'src/controller',
-    controllerSuffix: ''    // default 'Controller',
+    controllerSuffix: '',   // default 'Controller',
+    regexpFile: path.resolve(process.cwd(), 'src/config/routes'),       // default null,
 })
+```
+```js
+// router.js
+module.exports = {
+    '/404': 'common/notfound',
+    '/502': 'common/__error',
+    '/test/:no(\\d+)': 'common/__error',
+}
 ```
 
 ### usage
 ```js
 const { Router } = require('express-router-class');
-
 app.use(Router);
 ```
 

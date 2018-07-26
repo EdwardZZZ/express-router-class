@@ -10,11 +10,12 @@ const regexpMap = new Map();
 const controllerMap = new Map();
 function initMap() {
     console.log('--init route--');
-    const { controllerDir, controllerSuffix } = config.getConfig();
+    const { controllerDir, controllerSuffix, regexpFile } = config.getConfig();
 
     const reg = new RegExp(`([a-zA-Z0-9_]+)${controllerSuffix}.js`)
     console.assert(fs.existsSync(controllerDir), `controller filepath may need to be set, default:${controllerDir}`);
-    fs.readdirSync(controllerDir).forEach(function(name) {
+    // 读取controller目录
+    fs.readdirSync(controllerDir).forEach((name) => {
         const result = name.match(reg);
         if (result) {
             console.log(name);
@@ -23,14 +24,34 @@ function initMap() {
 
             if (pathMap.has(clazz)) {
                 const { regexp, propertyKey } = pathMap.get(clazz);
-                regexpMap.set(pathToRegexp(regexp), { instance, method: propertyKey });
+                regexpMap.set(pathToRegexp(regexp), { instance, method: instance[propertyKey] });
             }
 
             controllerMap.set(result[1].toLocaleLowerCase(), instance);
         }
-    })
+    });
+
+    // 配置路由文件
+    if (regexpFile) {
+        const regexps = require(regexpFile);
+        Object.keys(regexps).forEach((regexp) => {
+            const url = regexps[regexp].slice(1);
+            const pathArr = url.split('\/');
+            if (pathArr.length !== 2) return;
+
+            const [className, methodName] = pathArr;
+
+            const instance = controllerMap.get(className);
+            if (!instance) return;
+            const method = instance[methodName];
+            if (!method) return;
+
+            regexpMap.set(pathToRegexp(regexp), { instance, method });
+        })
+    }
 }
 
+// 调用对应方法
 function callMethod(instance, method, params, req, res, next) {
     instance.ctx = req.app;
     instance.req = req;
@@ -55,12 +76,13 @@ function callMethod(instance, method, params, req, res, next) {
     })
 }
 
+// path-to-regexp
 function pathRegexp(req, res, next) {
     for (let [key, value] of regexpMap) {
         const result = key.exec(req.path);
         if (result) {
             const { instance, method } = value;
-            callMethod(instance, method, result, req, res, next);
+            callMethod(instance, method, result.slice(1), req, res, next);
             return true;
         }
     }
@@ -68,18 +90,24 @@ function pathRegexp(req, res, next) {
     return false;
 }
 
+// 路由中间件
 function Router(req, res, next) {
-    if (pathRegexp(req, res, next)) return;
-
     controllerMap.size || initMap();
 
-    const url = req.path.slice(1) || 'index';
-    if (/^\d+$/.test(url)) {
+    if (pathRegexp(req, res, next)) return;
+
+    const url = req.path.slice(1) || '/index/index';
+
+    const pathArr = url.split('\/');
+    if (pathArr.length < 2) {
         return next();
     }
 
-    const pathArr = url.split('\/');
-    const [className = 'index', methodName = 'index', ...params] = pathArr;
+    const [className, methodName, ...params] = pathArr;
+    // 方法不能以'_'开头，regexp配置的除外
+    if (!methodName.indexOf('_')) {
+        return next();
+    }
 
     const instance = controllerMap.get(className);
     if (!instance) {

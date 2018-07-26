@@ -1,6 +1,6 @@
 {
   "name": "express-router-class",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "express router class",
   "main": "index.js",
   "scripts": {

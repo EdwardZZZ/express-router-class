@@ -4,6 +4,7 @@ const process = require('process');
 const config = {
     controllerDir: path.resolve(process.cwd(), 'src/controller'),
     controllerSuffix: 'Controller',
+    regexpFile: null,
 }
 
 export default {
