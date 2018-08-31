@@ -20,7 +20,7 @@ function initMap() {
         if (result) {
             console.log(name);
             const clazz = require(path.resolve(controllerDir, name));
-            const instance = new clazz();
+            const instance = Reflect.construct(clazz, []);
 
             if (pathMap.has(clazz)) {
                 const { regexp, propertyKey } = pathMap.get(clazz);
@@ -61,15 +61,15 @@ function callMethod(instance, method, params, req, res, next) {
     const { __before, __after } = instance;
     let promise = Promise.resolve();
     if (__before) {
-        promise = Promise.resolve(__before.apply(instance));
+        promise = Promise.resolve(Reflect.apply(__before, instance, []));
     }
 
     promise.then(data => {
         if (data === false) return false;
-        return method.apply(instance, params);
+        return Reflect.apply(method, instance, params);
     }).then(data => {
         if (data === false) return false;
-        __after && __after.apply(instance);
+        __after && Reflect.apply(__after, instance, []);
         return data;
     }).catch(e => {
         console.log(e);
