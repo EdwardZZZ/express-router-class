@@ -22,9 +22,11 @@ function initMap() {
             const clazz = require(path.resolve(controllerDir, name));
             const instance = Reflect.construct(clazz, []);
 
-            if (pathMap.has(clazz)) {
-                const { regexp, propertyKey } = pathMap.get(clazz);
-                regexpMap.set(pathToRegexp(regexp), { instance, method: instance[propertyKey] });
+            const regexpArr = pathMap.get(clazz);
+            if (regexpArr && regexpArr.length > 0) {
+                regexpArr.forEach(({ regexp, propertyKey }) => {
+                    regexpMap.set(pathToRegexp(regexp), { instance, method: instance[propertyKey] });
+                });
             }
 
             controllerMap.set(result[1].toLocaleLowerCase(), instance);
