@@ -12,10 +12,12 @@
 ```js
 const { setConfig } = require('express-router-class');
 setConfig({
-    controllerDir: '***'    // default 'src/controller',
+    modules: ['home', 'admin'] // default false,
+    controllerRoot: '***'   // default 'src', controllerDir src/controller
+                            // if setting modules: ['home'], controllerDir will transform to ['src/home/controller']
     controllerSuffix: '',   // default 'Controller',
     regexpFile: path.resolve(process.cwd(), 'src/config/routes'),       // default null,
-})
+});
 ```
 ```js
 // router.js

@@ -1,4 +1,3 @@
-import babel from 'rollup-plugin-babel';
 import uglify from 'rollup-plugin-uglify-es';
 
 export default {
@@ -7,11 +6,13 @@ export default {
   format: 'cjs',
   moduleName: 'module',
   plugins: [
-    babel({
-      exclude: 'node_modules/**',
-      runtimeHelpers: true
+    uglify({
+      mangle: false,
+      compress: false,
+      output: {
+        beautify: true,
+      },
     }),
-    uglify(),
   ],
   external: [
     'fs',

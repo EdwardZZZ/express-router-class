@@ -2,7 +2,8 @@ import path from 'path';
 const process = require('process');
 
 const config = {
-    controllerDir: path.resolve(process.cwd(), 'src/controller'),
+    modules: false,
+    controllerDir: path.resolve(process.cwd(), 'src'),
     controllerSuffix: 'Controller',
     regexpFile: null,
 }

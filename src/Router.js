@@ -5,16 +5,56 @@ import pathToRegexp from 'path-to-regexp';
 import { pathMap } from './path';
 import config from './config';
 
+let modules = false;
 const regexpMap = new Map();
+const moduleMap = new Map();
 
-const controllerMap = new Map();
 function initMap() {
     console.log('--init route--');
-    const { controllerDir, controllerSuffix, regexpFile } = config.getConfig();
+    const { modules: _modules, controllerRoot, controllerSuffix, regexpFile } = config.getConfig();
+    modules = _modules;
 
     const reg = new RegExp(`([a-zA-Z0-9_]+)${controllerSuffix}.js`)
-    console.assert(fs.existsSync(controllerDir), `controller filepath may need to be set, default:${controllerDir}`);
     // 读取controller目录
+    if (modules) {
+        modules.forEach((module) => {
+            readControllerDir(reg, path.resolve(controllerRoot, module));
+        });
+    } else {
+        readControllerDir(reg, controllerRoot);
+    }
+
+    // 配置路由文件
+    if (regexpFile) {
+        const regexps = require(regexpFile);
+        Object.keys(regexps).forEach((regexp) => {
+            const url = regexps[regexp].slice(1);
+            const pathArr = url.split('\/');
+
+            if (!modules) {
+                pathArr.splice(0, 0, 'index');
+            }
+
+            const [module, className = 'index', methodName = 'index'] = pathArr;
+
+            if (!moduleMap.has(module)) return;
+            const controllerMap = moduleMap.get(module);
+            const instance = controllerMap.get(className);
+            if (!instance) return;
+            const method = instance[methodName];
+            if (!method) return;
+
+            console.log(regexp, className, method);
+            regexpMap.set(pathToRegexp(regexp), { instance, method });
+        });
+    }
+}
+
+function readControllerDir(reg, dir, module = 'index') {
+    const controllerDir = path.resolve(dir, 'controller');
+    console.assert(fs.existsSync(controllerDir), `controller file path is not exists, path:${controllerDir}`);
+
+    const controllerMap = new Map();
     fs.readdirSync(controllerDir).forEach((name) => {
         const result = name.match(reg);
         if (result) {
@@ -25,6 +65,7 @@ function initMap() {
             const regexpArr = pathMap.get(clazz);
             if (regexpArr && regexpArr.length > 0) {
                 regexpArr.forEach(({ regexp, propertyKey }) => {
+                    console.log(regexp, name, propertyKey);
                     regexpMap.set(pathToRegexp(regexp), { instance, method: instance[propertyKey] });
                 });
             }
@@ -33,24 +74,7 @@ function initMap() {
         }
     });
 
-    // 配置路由文件
-    if (regexpFile) {
-        const regexps = require(regexpFile);
-        Object.keys(regexps).forEach((regexp) => {
-            const url = regexps[regexp].slice(1);
-            const pathArr = url.split('\/');
-            if (pathArr.length !== 2) return;
-
-            const [className, methodName] = pathArr;
-
-            const instance = controllerMap.get(className);
-            if (!instance) return;
-            const method = instance[methodName];
-            if (!method) return;
-
-            regexpMap.set(pathToRegexp(regexp), { instance, method });
-        })
-    }
+    moduleMap.set(module, controllerMap);
 }
 
 // 调用对应方法
@@ -96,21 +120,19 @@ function pathRegexp(req, res, next) {
 function Router(req, res, next) {
     controllerMap.size || initMap();
 
+    // 匹配map
     if (pathRegexp(req, res, next)) return;
 
-    const url = req.path.slice(1) || '/index/index';
+    // 默认匹配
+    const pathArr = req.path.slice(1).split('/');
 
-    const pathArr = url.split('\/');
-    if (pathArr.length < 2) {
-        return next();
-    }
-
-    const [className, methodName, ...params] = pathArr;
+    const [module = 'index', className = 'index', methodName = 'index', ...params] = pathArr;
     // 方法不能以'_'开头，regexp配置的除外
     if (!methodName.indexOf('_')) {
         return next();
     }
 
+    const controllerMap = moduleMap.get(module);
     const instance = controllerMap.get(className);
     if (!instance) {
         return next();
