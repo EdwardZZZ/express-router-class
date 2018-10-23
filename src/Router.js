@@ -18,7 +18,7 @@ function initMap() {
     // 读取controller目录
     if (modules) {
         modules.forEach((module) => {
-            readControllerDir(reg, path.resolve(controllerRoot, module));
+            readControllerDir(reg, path.resolve(controllerRoot, module), module);
         });
     } else {
         readControllerDir(reg, controllerRoot);
@@ -125,6 +125,9 @@ function Router(req, res, next) {
 
     // 默认匹配
     const pathArr = req.path.slice(1).split('/');
+    if (!modules) {
+        pathArr.splice(0, 0, 'index');
+    }
 
     const [module = 'index', className = 'index', methodName = 'index', ...params] = pathArr;
     // 方法不能以'_'开头，regexp配置的除外
