@@ -3,7 +3,8 @@ const process = require('process');
 
 const config = {
     modules: false,
-    controllerDir: path.resolve(process.cwd(), 'src'),
+    defaultModule: 'home',
+    controllerRoot: path.resolve(process.cwd(), 'src'),
     controllerSuffix: 'Controller',
     regexpFile: null,
 }

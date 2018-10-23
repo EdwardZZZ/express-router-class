@@ -1,6 +1,6 @@
 const pathMap = new Map();
 
-function Path(regexp) {
+function PathDecorator(regexp) {
     console.assert(regexp, 'decorator must have arguments, like "@path(\'/test/:test\')"');
     return function(target, propertyKey) {
         const regexpArr = pathMap.get(target.constructor) || [];
@@ -15,6 +15,6 @@ function Path(regexp) {
 };
 
 export {
-    Path,
+    PathDecorator,
     pathMap,
 }

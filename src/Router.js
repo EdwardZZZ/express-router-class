@@ -6,13 +6,21 @@ import { pathMap } from './path';
 import config from './config';
 
 let modules = false;
+let defaultModule = 'home';
 const regexpMap = new Map();
 const moduleMap = new Map();
 
 function initMap() {
     console.log('--init route--');
-    const { modules: _modules, controllerRoot, controllerSuffix, regexpFile } = config.getConfig();
+    const {
+        defaultModule: _defaultModule,
+        modules: _modules,
+        controllerRoot,
+        controllerSuffix,
+        regexpFile
+    } = config.getConfig();
     modules = _modules;
+    defaultModule = _defaultModule;
 
     const reg = new RegExp(`([a-zA-Z0-9_]+)${controllerSuffix}.js`)
     // 读取controller目录
@@ -32,7 +40,7 @@ function initMap() {
             const pathArr = url.split('\/');
 
             if (!modules) {
-                pathArr.splice(0, 0, 'index');
+                pathArr.splice(0, 0, defaultModule);
             }
 
             const [module, className = 'index', methodName = 'index'] = pathArr;
@@ -44,13 +52,13 @@ function initMap() {
             const method = instance[methodName];
             if (!method) return;
 
-            console.log(regexp, className, method);
+            console.log(regexp, className, method.name);
             regexpMap.set(pathToRegexp(regexp), { instance, method });
         });
     }
 }
 
-function readControllerDir(reg, dir, module = 'index') {
+function readControllerDir(reg, dir, module = defaultModule) {
     const controllerDir = path.resolve(dir, 'controller');
     console.assert(fs.existsSync(controllerDir), `controller file path is not exists, path:${controllerDir}`);
 
@@ -118,24 +126,29 @@ function pathRegexp(req, res, next) {
 
 // 路由中间件
 function Router(req, res, next) {
-    controllerMap.size || initMap();
+    moduleMap.size || initMap();
 
     // 匹配map
     if (pathRegexp(req, res, next)) return;
 
     // 默认匹配
-    const pathArr = req.path.slice(1).split('/');
+    const url = req.path.slice(1);
+    const pathArr = url ? url.split('/') : [];
     if (!modules) {
-        pathArr.splice(0, 0, 'index');
+        pathArr.splice(0, 0, defaultModule);
     }
 
-    const [module = 'index', className = 'index', methodName = 'index', ...params] = pathArr;
+    const [module = defaultModule, className = 'index', methodName = 'index', ...params] = pathArr;
     // 方法不能以'_'开头，regexp配置的除外
     if (!methodName.indexOf('_')) {
         return next();
     }
 
     const controllerMap = moduleMap.get(module);
+    if (!controllerMap) {
+        return next();
+    }
+
     const instance = controllerMap.get(className);
     if (!instance) {
         return next();
