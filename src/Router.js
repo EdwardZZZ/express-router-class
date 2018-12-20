@@ -88,6 +88,7 @@ function readControllerDir(reg, dir, module = defaultModule) {
 
 // 调用对应方法
 function callMethod(instance, method, params, req, res, next) {
+    const { timeout } = config.getConfig();
     instance.ctx = req.app;
     instance.req = req;
     instance.res = res;
@@ -96,13 +97,19 @@ function callMethod(instance, method, params, req, res, next) {
     const { __before, __after } = instance;
     const promise = Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
 
+    const timeoutFn = setTimeout(() => {
+        next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
+    }, timeout);
+
     promise.then(data => {
         if (data === false) return false;
         return Reflect.apply(method, instance, params);
     }).then(data => {
+        clearTimeout(timeoutFn);
         if (data === false) return false;
         return Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
     }).catch(e => {
+        clearTimeout(timeoutFn);
         console.error(e);
     });
 }
