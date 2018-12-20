@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import express from 'express';
 import pathToRegexp from 'path-to-regexp';
 
 import { pathMap } from './path';
@@ -157,4 +158,4 @@ function Router(req, res, next) {
     callMethod(instance, method, params, req, res, next);
 }
 
-export default Router;
+export default express.Router().all('*', Router);
