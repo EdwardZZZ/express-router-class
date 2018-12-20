@@ -6,6 +6,7 @@
 
 ### setting
 
+    All of settings have default value
     default controller dir 'src/controller'
     default route 'index/index'
 

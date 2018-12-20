@@ -35,7 +35,7 @@ function initMap() {
     // 配置路由文件
     if (regexpFile) {
         const regexps = require(regexpFile);
-        Object.keys(regexps).forEach((regexp) => {
+        for(let regexp in regexps){
             const url = regexps[regexp].slice(1);
             const pathArr = url.split('\/');
 
@@ -54,7 +54,7 @@ function initMap() {
 
             console.log(regexp, className, method.name);
             regexpMap.set(pathToRegexp(regexp), { instance, method });
-        });
+        }
     }
 }
 
@@ -93,21 +93,17 @@ function callMethod(instance, method, params, req, res, next) {
     instance.next = next;
 
     const { __before, __after } = instance;
-    let promise = Promise.resolve();
-    if (__before) {
-        promise = Promise.resolve(Reflect.apply(__before, instance, []));
-    }
+    const promise = Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
 
     promise.then(data => {
         if (data === false) return false;
         return Reflect.apply(method, instance, params);
     }).then(data => {
         if (data === false) return false;
-        __after && Reflect.apply(__after, instance, []);
-        return data;
+        return Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
     }).catch(e => {
-        console.log(e);
-    })
+        console.error(e);
+    });
 }
 
 // path-to-regexp
