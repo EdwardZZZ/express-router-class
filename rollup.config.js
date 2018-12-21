@@ -1,4 +1,5 @@
-import uglify from 'rollup-plugin-uglify-es';
+import { terser } from "rollup-plugin-terser";
+import nodeResolve from 'rollup-plugin-node-resolve';
 
 export default {
   entry: 'src/index.js',
@@ -6,12 +7,15 @@ export default {
   format: 'cjs',
   moduleName: 'module',
   plugins: [
-    uglify({
+    terser({
       mangle: false,
       compress: false,
       output: {
         beautify: true,
       },
+    }),
+    nodeResolve({
+      browser: false
     }),
   ],
   external: [

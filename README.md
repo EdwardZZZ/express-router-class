@@ -45,9 +45,8 @@ export default class Index{
 
     // route 'index/index'
     index() {
-        // this.res
-        // this.req
-        // this.next
+        // Important! Must be used like this
+        const { req, res, next } = this;
     }
 
     // route 'index/rest/1/2/3'

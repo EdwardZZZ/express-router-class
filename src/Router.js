@@ -48,13 +48,12 @@ function initMap() {
 
             if (!moduleMap.has(module)) return;
             const controllerMap = moduleMap.get(module);
-            const instance = controllerMap.get(className);
-            if (!instance) return;
-            const method = instance[methodName];
-            if (!method) return;
+            const clazz = controllerMap.get(className);
+            if (!clazz) return;
+            if (!Reflect.ownKeys(clazz.prototype).indexOf(methodName)) return;
 
-            console.log(regexp, className, method.name);
-            regexpMap.set(pathToRegexp(regexp), { instance, method });
+            console.log(regexp, className, methodName);
+            regexpMap.set(pathToRegexp(regexp), { clazz, methodName });
         }
     }
 }
@@ -69,17 +68,16 @@ function readControllerDir(reg, dir, module = defaultModule) {
         if (result) {
             console.log(name);
             const clazz = require(path.resolve(controllerDir, name));
-            const instance = Reflect.construct(clazz, []);
 
             const regexpArr = pathMap.get(clazz);
             if (regexpArr && regexpArr.length > 0) {
                 regexpArr.forEach(({ regexp, propertyKey }) => {
                     console.log(regexp, name, propertyKey);
-                    regexpMap.set(pathToRegexp(regexp), { instance, method: instance[propertyKey] });
+                    regexpMap.set(pathToRegexp(regexp), { clazz, methodName: propertyKey });
                 });
             }
 
-            controllerMap.set(result[1].toLocaleLowerCase(), instance);
+            controllerMap.set(result[1].toLocaleLowerCase(), clazz);
         }
     });
 
@@ -87,41 +85,47 @@ function readControllerDir(reg, dir, module = defaultModule) {
 }
 
 // 调用对应方法
-function callMethod(instance, method, params, req, res, next) {
-    const { timeout } = config.getConfig();
-    instance.ctx = req.app;
-    instance.req = req;
-    instance.res = res;
-    instance.next = next;
+async function callMethod(clazz, methodName, params, req, res, next) {
+    try {
+        const instance = Reflect.construct(clazz, []);
+        const { timeout } = config.getConfig();
+        instance.req = req;
+        instance.res = res;
+        instance.next = next;
+        const { __before, __after } = instance;
+        const timeoutFn = setTimeout(() => {
+            next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
+        }, timeout);
 
-    const { __before, __after } = instance;
-    const promise = Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
+        const beforeResult = await Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
+        if (beforeResult === false) {
+            clearTimeout(timeoutFn);
+            return;
+        }
 
-    const timeoutFn = setTimeout(() => {
-        next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
-    }, timeout);
-
-    promise.then(data => {
-        if (data === false) return false;
-        return Reflect.apply(method, instance, params);
-    }).then(data => {
+        const method = Reflect.get(instance, methodName)
+        const methodResult = await Promise.resolve(Reflect.apply(method, instance, params));
         clearTimeout(timeoutFn);
-        if (data === false) return false;
-        return Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
-    }).catch(e => {
-        clearTimeout(timeoutFn);
-        console.error(e);
-    });
+        if (methodResult === false) {
+            return methodResult;
+        }
+
+        await Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
+        return methodResult;
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 // path-to-regexp
-function pathRegexp(req, res, next) {
+function pathRegexp(path) {
     for (let [key, value] of regexpMap) {
-        const result = key.exec(req.path);
+        const result = key.exec(path);
         if (result) {
-            const { instance, method } = value;
-            callMethod(instance, method, result.slice(1), req, res, next);
-            return true;
+            const { clazz, methodName } = value;
+            return {
+                clazz, methodName, params: result.slice(1)
+            };
         }
     }
 
@@ -129,40 +133,48 @@ function pathRegexp(req, res, next) {
 }
 
 // 路由中间件
-function Router(req, res, next) {
-    moduleMap.size || initMap();
+async function Router(req, res, next) {
+    try {
+        moduleMap.size || initMap();
 
-    // 匹配map
-    if (pathRegexp(req, res, next)) return;
+        // 匹配map
+        const pathRegexpResult = pathRegexp(req.path);
+        if (pathRegexpResult) {
+            const { clazz, methodName, params } = pathRegexpResult;
+            return await callMethod(clazz, methodName, params, req, res, next);
+        }
 
-    // 默认匹配
-    const url = req.path.slice(1);
-    const pathArr = url ? url.split('/') : [];
-    if (!modules) {
-        pathArr.splice(0, 0, defaultModule);
+        // 默认匹配
+        const url = req.path.slice(1);
+        const pathArr = url ? url.split('/') : [];
+        if (!modules) {
+            pathArr.splice(0, 0, defaultModule);
+        }
+
+        const [module = defaultModule, className = 'index', methodName = 'index', ...params] = pathArr;
+        // 方法不能以'_'开头，regexp配置的除外
+        if (!methodName.indexOf('_')) {
+            return next();
+        }
+
+        const controllerMap = moduleMap.get(module);
+        if (!controllerMap) {
+            return next();
+        }
+
+        const clazz = controllerMap.get(className);
+        if (!clazz) {
+            return next();
+        }
+
+        if (Reflect.ownKeys(clazz.prototype).indexOf(methodName) === -1) {
+            return next();
+        }
+
+        return await callMethod(clazz, methodName, params, req, res, next);
+    } catch(err) {
+        next(err);
     }
-
-    const [module = defaultModule, className = 'index', methodName = 'index', ...params] = pathArr;
-    // 方法不能以'_'开头，regexp配置的除外
-    if (!methodName.indexOf('_')) {
-        return next();
-    }
-
-    const controllerMap = moduleMap.get(module);
-    if (!controllerMap) {
-        return next();
-    }
-
-    const instance = controllerMap.get(className);
-    if (!instance) {
-        return next();
-    }
-    const method = instance[methodName];
-    if (!method) {
-        return next();
-    }
-
-    callMethod(instance, method, params, req, res, next);
 }
 
 export default express.Router().all('*', Router);
