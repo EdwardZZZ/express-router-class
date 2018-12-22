@@ -86,12 +86,12 @@ function readControllerDir(reg, dir, module = defaultModule) {
 
 // 调用对应方法
 async function callMethod(clazz, methodName, params, req, res, next) {
+    const { timeout } = config.getConfig();
     const timeoutFn = setTimeout(() => {
         next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
     }, timeout);
     try {
         const instance = Reflect.construct(clazz, []);
-        const { timeout } = config.getConfig();
         instance.req = req;
         instance.res = res;
         instance.next = next;
