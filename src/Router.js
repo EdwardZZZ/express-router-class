@@ -86,6 +86,9 @@ function readControllerDir(reg, dir, module = defaultModule) {
 
 // 调用对应方法
 async function callMethod(clazz, methodName, params, req, res, next) {
+    const timeoutFn = setTimeout(() => {
+        next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
+    }, timeout);
     try {
         const instance = Reflect.construct(clazz, []);
         const { timeout } = config.getConfig();
@@ -93,9 +96,6 @@ async function callMethod(clazz, methodName, params, req, res, next) {
         instance.res = res;
         instance.next = next;
         const { __before, __after } = instance;
-        const timeoutFn = setTimeout(() => {
-            next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
-        }, timeout);
 
         const beforeResult = await Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
         if (beforeResult === false) {
@@ -113,6 +113,7 @@ async function callMethod(clazz, methodName, params, req, res, next) {
         await Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
         return methodResult;
     } catch (err) {
+        clearTimeout(timeoutFn);
         console.error(err);
     }
 }
