@@ -10,6 +10,7 @@ let modules = false;
 let defaultModule = 'home';
 const regexpMap = new Map();
 const moduleMap = new Map();
+const regexpMethodMap = new Map();
 
 function initMap() {
     console.log('--init route--');
@@ -52,10 +53,18 @@ function initMap() {
             if (!clazz) return;
             if (!Reflect.ownKeys(clazz.prototype).indexOf(methodName)) return;
 
-            console.log(regexp, className, methodName);
-            regexpMap.set(pathToRegexp(regexp), { clazz, methodName });
+            addToRegexpMap(regexp, clazz, methodName);
         }
     }
+}
+
+function addToRegexpMap(regexp, clazz, methodName) {
+    console.log(regexp, clazz.name, methodName);
+    regexpMap.set(pathToRegexp(regexp), { clazz, methodName });
+
+    const methods = regexpMethodMap.get(clazz) || [];
+    methods.push(methodName);
+    regexpMethodMap.set(clazz, methods);
 }
 
 function readControllerDir(reg, dir, module = defaultModule) {
@@ -72,8 +81,7 @@ function readControllerDir(reg, dir, module = defaultModule) {
             const regexpArr = pathMap.get(clazz);
             if (regexpArr && regexpArr.length > 0) {
                 regexpArr.forEach(({ regexp, propertyKey }) => {
-                    console.log(regexp, name, propertyKey);
-                    regexpMap.set(pathToRegexp(regexp), { clazz, methodName: propertyKey });
+                    addToRegexpMap(regexp, clazz, propertyKey);
                 });
             }
 
@@ -163,12 +171,17 @@ async function Router(req, res, next) {
             return next();
         }
 
+        console.log('\n\n', controllerMap.keys());
         const clazz = controllerMap.get(className);
         if (!clazz) {
             return next();
         }
 
         if (Reflect.ownKeys(clazz.prototype).indexOf(methodName) === -1) {
+            return next();
+        }
+
+        if (regexpMethodMap.has(clazz) && regexpMethodMap.get(clazz).indexOf(methodName) > -1) {
             return next();
         }
 
