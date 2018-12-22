@@ -11,16 +11,6 @@
     default route 'index/index'
 
 ```js
-const { setConfig } = require('express-router-class');
-setConfig({
-    modules: ['home', 'admin'] // default false,
-    controllerRoot: '***'   // default 'src', controllerDir src/controller
-                            // if setting modules: ['home'], controllerDir will transform to ['src/home/controller']
-    controllerSuffix: '',   // default 'Controller',
-    regexpFile: path.resolve(process.cwd(), 'src/config/routes'),       // default null,
-});
-```
-```js
 // router.js
 module.exports = {
     '/404': 'common/notfound',
@@ -32,7 +22,14 @@ module.exports = {
 ### usage
 ```js
 const { Router } = require('express-router-class');
-app.use(Router);
+const config = {
+    modules: ['home', 'admin'] // default false,
+    controllerRoot: '***'   // default 'src', controllerDir src/controller
+                            // if setting modules: ['home'], controllerDir will transform to ['src/home/controller']
+    controllerSuffix: '',   // default 'Controller',
+    regexpFile: path.resolve(process.cwd(), 'src/config/routes'),       // default null,
+};
+app.use(Router(config));
 ```
 
 ```js
@@ -45,8 +42,10 @@ export default class Index{
 
     // route 'index/index'
     index() {
-        // Important! Must be used like this
-        const { req, res, next } = this;
+        // this.req
+        // this.res
+        // this.next
+        // this.ctx
     }
 
     // route 'index/rest/1/2/3'
