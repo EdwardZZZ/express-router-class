@@ -119,10 +119,24 @@ async function callMethod(clazz, methodName, params, req, res, next) {
         }
 
         await Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
+
+        if (!res.headersSent) {
+            let clazzName = clazz.name;
+            if (clazzName === '_class') {
+                for (let [, controllerMap] of moduleMap) {
+                    for (let [key, clz] of controllerMap) {
+                        if(clz === clazz) {
+                            clazzName = key;
+                        }
+                    }
+                }
+            }
+            return next(new Error(`${clazzName}.${methodName}() did not send content.`));
+        }
         return methodResult;
     } catch (err) {
         clearTimeout(timeoutFn);
-        console.error(err);
+        next(err);
     }
 }
 
@@ -171,7 +185,6 @@ async function Router(req, res, next) {
             return next();
         }
 
-        console.log('\n\n', controllerMap.keys());
         const clazz = controllerMap.get(className);
         if (!clazz) {
             return next();

@@ -16,6 +16,7 @@ module.exports = {
     '/404': 'common/notfound',
     '/502': 'common/__error',
     '/test/:no(\\d+)': 'common/__error',
+    '/hello/world': `/${className}/${methodName}`,
 }
 ```
 

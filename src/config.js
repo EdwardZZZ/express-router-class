@@ -2,7 +2,7 @@ import path from 'path';
 const process = require('process');
 
 const config = {
-    timeout: 5e3,
+    timeout: 10e3,
     modules: false,
     defaultModule: 'home',
     controllerRoot: path.resolve(process.cwd(), 'src'),
