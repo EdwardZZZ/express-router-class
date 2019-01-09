@@ -11,6 +11,7 @@ let defaultModule = 'home';
 const regexpMap = new Map();
 const moduleMap = new Map();
 const regexpMethodMap = new Map();
+let controllerReg = null;
 
 function initMap() {
     console.log('--init route--');
@@ -24,14 +25,14 @@ function initMap() {
     modules = _modules;
     defaultModule = _defaultModule;
 
-    const reg = new RegExp(`([a-zA-Z0-9_]+)${controllerSuffix}.js`)
+    controllerReg = new RegExp(`([a-zA-Z0-9_]+)${controllerSuffix}.js`)
     // 读取controller目录
     if (modules) {
         modules.forEach((module) => {
-            readControllerDir(reg, path.resolve(controllerRoot, module), module);
+            readControllerDir(path.resolve(controllerRoot, module, 'controller'), module);
         });
     } else {
-        readControllerDir(reg, controllerRoot);
+        readControllerDir(path.resolve(controllerRoot, 'controller'));
     }
 
     // 配置路由文件
@@ -67,16 +68,21 @@ function addToRegexpMap(regexp, clazz, methodName) {
     regexpMethodMap.set(clazz, methods);
 }
 
-function readControllerDir(reg, dir, module = defaultModule) {
-    const controllerDir = path.resolve(dir, 'controller');
+function readControllerDir(controllerDir, module = defaultModule) {
     console.assert(fs.existsSync(controllerDir), `controller file path is not exists, path:${controllerDir}`);
 
     const controllerMap = new Map();
     fs.readdirSync(controllerDir).forEach((name) => {
-        const result = name.match(reg);
+        const filePath = path.resolve(controllerDir, name);
+        if (fs.statSync(filePath).isDirectory()) {
+            readControllerDir(filePath, module);
+            return;
+        }
+
+        const result = name.match(controllerReg);
         if (result) {
             console.log(name);
-            const clazz = require(path.resolve(controllerDir, name));
+            const clazz = require(filePath);
 
             const regexpArr = pathMap.get(clazz);
             if (regexpArr && regexpArr.length > 0) {
