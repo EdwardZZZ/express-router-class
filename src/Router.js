@@ -6,11 +6,19 @@ import pathToRegexp from 'path-to-regexp';
 import { pathMap } from './path';
 import config from './config';
 
+// 是否使用模块
 let modules = false;
+// 默认模块
 let defaultModule = 'home';
+// 静态
+const staticMap = new Map();
+// 正则
 const regexpMap = new Map();
+// 模块
 const moduleMap = new Map();
+// 有正则的方法
 const regexpMethodMap = new Map();
+// controller 正则
 let controllerReg = null;
 
 function initMap() {
@@ -61,6 +69,7 @@ function initMap() {
 
 function addToRegexpMap(regexp, clazz, methodName) {
     console.log(regexp, clazz.name, methodName);
+    staticMap.set(regexp, { clazz, methodName });
     regexpMap.set(pathToRegexp(regexp), { clazz, methodName });
 
     const methods = regexpMethodMap.get(clazz) || [];
@@ -106,9 +115,7 @@ async function callMethod(clazz, methodName, params, req, res, next) {
     }, timeout);
     try {
         const instance = Reflect.construct(clazz, []);
-        instance.req = req;
-        instance.res = res;
-        instance.next = next;
+        instance.ctx = { res, req, next };
         const { __before, __after } = instance;
 
         const beforeResult = await Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
@@ -166,15 +173,24 @@ async function Router(req, res, next) {
     try {
         moduleMap.size || initMap();
 
+        const reqPath = req.path;
+
+        // 静态
+        const staticResult = staticMap.get(reqPath);
+        if(staticResult) {
+            const { clazz, methodName, params = [] } = staticResult;
+            return await callMethod(clazz, methodName, params, req, res, next);
+        }
+
         // 匹配map
-        const pathRegexpResult = pathRegexp(req.path);
+        const pathRegexpResult = pathRegexp(reqPath);
         if (pathRegexpResult) {
             const { clazz, methodName, params } = pathRegexpResult;
             return await callMethod(clazz, methodName, params, req, res, next);
         }
 
         // 默认匹配
-        const url = req.path.slice(1);
+        const url = reqPath.slice(1);
         const pathArr = url ? url.split('/') : [];
         if (!modules) {
             pathArr.splice(0, 0, defaultModule);
