@@ -68,16 +68,22 @@ function initMap() {
 }
 
 function addToRegexpMap(regexp, clazz, methodName) {
-    console.log(regexp, clazz.name, methodName);
+    const newRegexp = (clazz.__rootPath ? clazz.__rootPath : '') + regexp;
+    console.log(newRegexp, clazz.name, methodName);
     // add to staticMap
-    if (!~regexp.indexOf(':')) {
-        staticMap.set(regexp, { clazz, methodName });
+    if (!~newRegexp.indexOf(':')) {
+        staticMap.set(newRegexp, { clazz, methodName });
     }
-    regexpMap.set(pathToRegexp(regexp), { clazz, methodName });
+    regexpMap.set(pathToRegexp(newRegexp), { clazz, methodName });
 
     const methods = regexpMethodMap.get(clazz) || [];
     methods.push(methodName);
     regexpMethodMap.set(clazz, methods);
+}
+
+function requireDefault(p) {
+    const ex = require(p);
+    return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex;
 }
 
 function readControllerDir(controllerDir, module = defaultModule) {
@@ -93,8 +99,7 @@ function readControllerDir(controllerDir, module = defaultModule) {
 
         const result = name.match(controllerReg);
         if (result) {
-            console.log(name);
-            const clazz = require(filePath);
+            const clazz = requireDefault(filePath);
 
             const regexpArr = pathMap.get(clazz);
             if (regexpArr && regexpArr.length > 0) {

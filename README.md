@@ -37,6 +37,7 @@ app.use(Router(config));
 const { Path } = require('express-router-class');
 
 // controller
+// @Path('/rootpath') // default ''
 export default class Index{
     __before() {}
     __after() {}
