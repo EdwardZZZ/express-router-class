@@ -1,28 +1,32 @@
 import { terser } from "rollup-plugin-terser";
 import nodeResolve from 'rollup-plugin-node-resolve';
 
-export default {
-  entry: 'src/index.js',
-  dest: 'index.js',
-  format: 'cjs',
-  moduleName: 'module',
-  plugins: [
-    terser({
-      mangle: false,
-      compress: false,
-      output: {
-        beautify: true,
-      },
-    }),
-    nodeResolve({
-      browser: false
-    }),
-  ],
-  external: [
-    'fs',
-    'path',
-    'express',
-    'path',
-    'path-to-regexp'
-  ],
+const prod = process.env.NODE_ENV === 'production';
+
+const config = {
+    entry: 'src/index.js',
+    dest: 'index.js',
+    format: 'cjs',
+    plugins: [
+        terser({
+            mangle: prod,
+            compress: false,
+            toplevel: true,
+            output: {
+                beautify: true,
+            },
+        }),
+        nodeResolve({
+            browser: false,
+        }),
+    ],
+    external: [
+        'fs',
+        'path',
+        'express',
+        'path',
+        'path-to-regexp'
+    ],
 };
+
+export default config;

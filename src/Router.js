@@ -69,7 +69,10 @@ function initMap() {
 
 function addToRegexpMap(regexp, clazz, methodName) {
     console.log(regexp, clazz.name, methodName);
-    staticMap.set(regexp, { clazz, methodName });
+    // add to staticMap
+    if (!~regexp.indexOf(':')) {
+        staticMap.set(regexp, { clazz, methodName });
+    }
     regexpMap.set(pathToRegexp(regexp), { clazz, methodName });
 
     const methods = regexpMethodMap.get(clazz) || [];
@@ -109,29 +112,23 @@ function readControllerDir(controllerDir, module = defaultModule) {
 
 // 调用对应方法
 async function callMethod(clazz, methodName, params, req, res, next) {
-    const { timeout } = config.getConfig();
-    const timeoutFn = setTimeout(() => {
-        next(new Error(`TimeoutException: timeout: ${timeout}, url: ${req.originalUrl}`));
-    }, timeout);
     try {
         const instance = Reflect.construct(clazz, []);
         instance.ctx = { res, req, next };
         const { __before, __after } = instance;
 
-        const beforeResult = await Promise.resolve(__before ? Reflect.apply(__before, instance, []) : void 0);
+        const beforeResult = await Promise.resolve(Reflect.apply(__before, instance, []));
         if (beforeResult === false) {
-            clearTimeout(timeoutFn);
             return;
         }
 
         const method = Reflect.get(instance, methodName)
         const methodResult = await Promise.resolve(Reflect.apply(method, instance, params));
-        clearTimeout(timeoutFn);
         if (methodResult === false) {
             return methodResult;
         }
 
-        await Promise.resolve(__after ? Reflect.apply(__after, instance, []) : void 0);
+        await Promise.resolve(Reflect.apply(__after, instance, []));
 
         // if (!res.headersSent) {
         //     let clazzName = clazz.name;
@@ -148,7 +145,6 @@ async function callMethod(clazz, methodName, params, req, res, next) {
         // }
         return methodResult;
     } catch (err) {
-        clearTimeout(timeoutFn);
         next(err);
     }
 }
