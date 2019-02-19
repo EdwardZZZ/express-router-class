@@ -34,11 +34,11 @@ app.use(Router(config));
 ```
 
 ```js
-const { Path } = require('express-router-class');
+const { Path, Controller } = require('express-router-class');
 
 // controller
 // @Path('/rootpath') // default ''
-export default class Index{
+export default class Index extends Controller {
     __before() {}
     __after() {}
 
@@ -53,6 +53,7 @@ export default class Index{
     // route 'index/rest/1/2/3'
     rest(a, b, c) {
         console.log(a, b, c); // 1, 2, 3
+        this.render('index/index');
     }
 
     // route 'index/test/a/b/c/d'
@@ -67,3 +68,4 @@ export default class Index{
     }
 }
 ```
+
