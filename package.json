@@ -1,11 +1,12 @@
 {
   "name": "express-router-class",
-  "version": "2.2.0",
+  "version": "2.2.2",
   "description": "express router class",
   "main": "index.js",
   "scripts": {
     "dev": "rollup -c -w",
-    "build": "cross-env NODE_ENV=production rollup -c"
+    "build": "cross-env NODE_ENV=production rollup -c",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",

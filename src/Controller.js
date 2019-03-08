@@ -36,7 +36,7 @@ export default class Controller {
      * @param  {...any} props 参数
      */
     json(...props) {
-        return this.res.json(props);
+        return this.res.json(...props);
     }
 
     /**
@@ -44,7 +44,7 @@ export default class Controller {
      * @param  {...any} props 参数
      */
     jsonp(...props) {
-        return this.res.jsonp(props);
+        return this.res.jsonp(...props);
     }
 
     /**
@@ -52,6 +52,6 @@ export default class Controller {
      * @param  {...any} props 参数
      */
     render(...props) {
-        return this.res.render(props);
+        return this.res.render(...props);
     }
 }
