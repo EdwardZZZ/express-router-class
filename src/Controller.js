@@ -48,10 +48,26 @@ export default class Controller {
     }
 
     /**
+     * 返回数据
+     * @param  {...any} props 参数
+     */
+    send(...props) {
+        return this.res.send(...props);
+    }
+
+    /**
      * 模板渲染返回
      * @param  {...any} props 参数
      */
     render(...props) {
         return this.res.render(...props);
+    }
+
+    status(...props) {
+        return this.res.status(...props);
+    }
+
+    redirect(...props) {
+        return this.res.redirect(...props);
     }
 }

@@ -5,6 +5,7 @@ import pathToRegexp from 'path-to-regexp';
 
 import { pathMap } from './path';
 import config from './config';
+import Controller from './Controller';
 
 // 是否使用模块
 let modules = false;
@@ -117,6 +118,10 @@ function readControllerDir(controllerDir, module = defaultModule) {
 
 // 调用对应方法
 async function callMethod(clazz, methodName, params, req, res, next) {
+    if (!(clazz instanceof Controller)) {
+        throw new Error('controller must extends Controller, { Controller } = require(\'\')');
+    }
+
     try {
         const instance = Reflect.construct(clazz, []);
         instance.ctx = { res, req, next };
