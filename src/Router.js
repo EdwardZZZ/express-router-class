@@ -118,12 +118,12 @@ function readControllerDir(controllerDir, module = defaultModule) {
 
 // 调用对应方法
 async function callMethod(clazz, methodName, params, req, res, next) {
-    if (!(clazz instanceof Controller)) {
+    const instance = Reflect.construct(clazz, []);
+    if (!(instance instanceof Controller)) {
         throw new Error('controller must extends Controller, { Controller } = require(\'\')');
     }
 
     try {
-        const instance = Reflect.construct(clazz, []);
         instance.ctx = { res, req, next };
         const { __before, __after } = instance;
 
