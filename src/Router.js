@@ -125,6 +125,7 @@ async function callMethod(clazz, methodName, params, req, res, next) {
 
     try {
         instance.ctx = { res, req, next };
+        Reflect.defineProperty(instance, 'ctx', {});
         const { __before, __after } = instance;
 
         const beforeResult = await Promise.resolve(Reflect.apply(__before, instance, []));
